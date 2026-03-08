@@ -180,3 +180,25 @@ video {
   flex-direction: column;
   min-height: 0;
 }
+
+#controls {
+  position: relative;
+  z-index: 1000;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#telemetry {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.video-grid {
+  position: relative;
+  z-index: 1;
+}

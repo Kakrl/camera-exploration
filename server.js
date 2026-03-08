@@ -211,5 +211,5 @@ wss.on("connection", (ws) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`jadden demo running on port ${PORT}`);
+  console.log(`Connect here: http://localhost:${PORT}`);
 });

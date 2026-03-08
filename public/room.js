@@ -103,18 +103,33 @@ function createPeerConnection() {
 
     const stats = await peerConnection.getStats();
     stats.forEach(report => {
-      if (report.type === 'inbound-rtp' && report.kind === 'video') {
+      if ((report.type === 'inbound-rtp' || report.type === 'outbound-rtp') && report.kind === 'video') {
         if (lastStats) {
           const prev = lastStats.get(report.id);
-          const deltaSeconds = (report.timestamp - prev.timestamp) / 1000;
-          const fps = (report.framesDecoded - prev.framesDecoded) / deltaSeconds;
-          
-          document.getElementById('val-fps').innerText = Math.round(fps);
-          document.getElementById('val-loss').innerText = report.packetsLost;
+          if (prev) {
+            const deltaSeconds = (report.timestamp - prev.timestamp) / 1000;
+            
+            const frames = report.type === 'inbound-rtp' ? report.framesDecoded : report.framesEncoded;
+            const prevFrames = report.type === 'inbound-rtp' ? prev.framesDecoded : prev.framesEncoded;
+            
+            const fps = (frames - prevFrames) / deltaSeconds;
+            
+            if (!isNaN(fps) && fps >= 0) {
+              document.getElementById('val-fps').innerText = Math.round(fps);
+            }
+            
+            if (report.type === 'inbound-rtp') {
+              document.getElementById('val-loss').innerText = report.packetsLost || 0;
+            }
+          }
         }
       }
+
+      // 2. RTT (Latency)
       if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-        document.getElementById('val-rtt').innerText = Math.round(report.currentRoundTripTime * 1000);
+        if (report.currentRoundTripTime !== undefined) {
+          document.getElementById('val-rtt').innerText = Math.round(report.currentRoundTripTime * 1000);
+        }
       }
     });
     lastStats = stats;
@@ -387,14 +402,16 @@ async function setFrameRateMode(fpsValue) {
   if (!localStream) return; 
   
   const videoTrack = localStream.getVideoTracks()[0];
+  const val = parseInt(fpsValue);
+
   const constraints = {
-    frameRate: { ideal: parseInt(fpsValue), max: parseInt(fpsValue) }
+    frameRate: { ideal: val, max: val } 
   };
 
   try {
     await videoTrack.applyConstraints(constraints);
-    console.log(`Switched to ${fpsValue} FPS mode.`);
+    console.log(`Frame rate set to: ${val} FPS`);
   } catch (e) {
-    console.warn("FPS constraint failed. Hardware may not support this rate.", e);
+    console.warn("Could not apply 5 FPS constraint:", e);
   }
 }
