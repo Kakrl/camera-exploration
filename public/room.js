@@ -96,6 +96,29 @@ function createPeerConnection() {
   if (peerConnection) return peerConnection;
 
   peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  let lastStats = null;
+
+  setInterval(async () => {
+    if (!peerConnection) return;
+
+    const stats = await peerConnection.getStats();
+    stats.forEach(report => {
+      if (report.type === 'inbound-rtp' && report.kind === 'video') {
+        if (lastStats) {
+          const prev = lastStats.get(report.id);
+          const deltaSeconds = (report.timestamp - prev.timestamp) / 1000;
+          const fps = (report.framesDecoded - prev.framesDecoded) / deltaSeconds;
+          
+          document.getElementById('val-fps').innerText = Math.round(fps);
+          document.getElementById('val-loss').innerText = report.packetsLost;
+        }
+      }
+      if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+        document.getElementById('val-rtt').innerText = Math.round(report.currentRoundTripTime * 1000);
+      }
+    });
+    lastStats = stats;
+  }, 1000);
 
   peerConnection.onicecandidate = (event) => {
     if (!event.candidate) return;
@@ -359,3 +382,19 @@ startSession().catch((err) => {
   showError(err.message || "could not start camera/microphone.");
   setStatus(role === "host" ? "disconnected" : "retry", "status-red");
 });
+
+async function setFrameRateMode(fpsValue) {
+  if (!localStream) return; 
+  
+  const videoTrack = localStream.getVideoTracks()[0];
+  const constraints = {
+    frameRate: { ideal: parseInt(fpsValue), max: parseInt(fpsValue) }
+  };
+
+  try {
+    await videoTrack.applyConstraints(constraints);
+    console.log(`Switched to ${fpsValue} FPS mode.`);
+  } catch (e) {
+    console.warn("FPS constraint failed. Hardware may not support this rate.", e);
+  }
+}

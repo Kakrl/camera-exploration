@@ -35,6 +35,23 @@
           </section>
         </div>
 
+        <div id="controls">
+          <select id="fps-selector" onchange="setFrameRateMode(this.value)">
+            <option value="10">10 FPS</option>
+            <option value="20">20 FPS</option>
+            <option value="30" selected>30 FPS</option>
+            <option value="40">40 FPS</option>
+            <option value="50">50 FPS</option>
+            <option value="60">60 FPS</option>
+          </select>
+        </div>
+
+        <div id="telemetry" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: #0f0; padding: 8px; font-family: monospace; z-index: 100;">
+          FPS: <span id="val-fps">--</span> | 
+          RTT: <span id="val-rtt">--</span>ms | 
+          Loss: <span id="val-loss">--</span>
+        </div>
+
         <div class="room-actions">
           <button id="rejoinBtn" class="small-btn">rejoin</button>
           <a href="/" class="small-link">back to home</a>
