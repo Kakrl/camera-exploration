@@ -145,12 +145,17 @@ function createPeerConnection() {
 
   peerConnection.onconnectionstatechange = () => {
     const state = peerConnection.connectionState;
+    const telemetry = document.getElementById('telemetry');
+    
     if (state === "connected") {
-      setStatus(role === "host" ? "phone connected" : "connected", "status-green");
-    } else if (state === "connecting") {
-      setStatus(role === "host" ? "waiting for phone" : "connecting", "status-yellow");
-    } else if (state === "failed" || state === "disconnected" || state === "closed") {
-      setStatus(role === "host" ? "disconnected" : "retry", "status-red");
+      setStatus(role === "host" ? "phone active" : "streaming", "status-green");
+      telemetry.style.display = 'block';
+    } else if (state === "disconnected" || state === "failed") {
+      setStatus("sensor lost", "status-red");
+      telemetry.style.display = 'none';
+      if (role === "host") {
+        showError("Phone disconnected. Use 'Re-pair Sensor' below.");
+      }
     }
   };
 
@@ -410,3 +415,32 @@ async function setFrameRateMode(fpsValue) {
     console.warn("Could not apply 5 FPS constraint:", e);
   }
 }
+
+async function repairSensor() {
+  console.log("Attempting to re-pair camera sensor...");
+  clearError();
+  hasPeer = false;
+  
+  closePeerConnection();
+  disconnectSocket();
+  
+  await startSession();
+}
+
+function endSession() {
+  if (confirm("Are you sure you want to end this MakeShift session?")) {
+
+    safeSend({ type: "peer-left", roomCode, payload: { role } });
+    
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    
+    closePeerConnection();
+    disconnectSocket();
+    
+    window.location.href = "/";
+  }
+}
+
+document.getElementById("endSessionBtn").addEventListener("click", endSession);
